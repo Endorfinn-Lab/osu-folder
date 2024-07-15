@@ -1,2 +1,2 @@
 # osu-folder
-for now just a deleter
+for now just a deleter, its filtered by keycount
