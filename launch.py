@@ -3,6 +3,7 @@ import shutil
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
+import time
 
 def select_osu_folder():
     """
@@ -30,12 +31,11 @@ def update_beatmap_count():
                     beatmap_count += 1
     beatmap_count_label.config(text=f"Beatmap Count: {beatmap_count}")
 
-def search_beatmaps():
+def search_beatmaps(key):
     """
     Searches for beatmaps based on the entered title, key, and selection.
     """
-    title = title_entry.get()
-    key = key_entry.get()
+    title = title_entry.get().lower()  # Convert title to lowercase for case-insensitive search
     search_all = all_beatmaps_var.get()
     found_beatmaps = []
 
@@ -68,7 +68,7 @@ def display_results(beatmaps):
         result_listbox.insert(tk.END, beatmap)
     search_count_label.config(text=f"Found: {len(beatmaps)}")
 
-def delete_selected_beatmaps():
+def delete_selected_beatmaps(key):
     """
     Deletes the selected beatmaps from the osu! directory.
     """
@@ -78,15 +78,132 @@ def delete_selected_beatmaps():
         for index in selected_indices:
             folder_name = result_listbox.get(index)
             folder_path = os.path.join(osu_folder_path, folder_name)
+            for filename in os.listdir(folder_path):
+                if filename.endswith(".osu"):
+                    file_path = os.path.join(folder_path, filename)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            if "CircleSize:" in content:
+                                key_count = int(content.split("CircleSize:")[1].split()[0])
+                                if key_count == int(key):
+                                    os.remove(file_path)
+                                    print(f"Deleted beatmap file: {filename}")
+                    except FileNotFoundError:
+                        print(f"Error: File not found for {filename}")
+                    except PermissionError:
+                        # Add a delay for potential process lock
+                        print(f"Waiting for process to release '{filename}'...")
+                        time.sleep(2)
+                        try:
+                            os.remove(file_path)
+                            print(f"Deleted beatmap file: {filename}")
+                        except FileNotFoundError:
+                            print(f"Error: File not found for {filename}")
+                        except Exception as e:
+                            print(f"An error occurred while deleting {filename}: {e}")
+                    except Exception as e:
+                        print(f"An error occurred while deleting {filename}: {e}")
+            # After deleting .osu files, update beatmap count (if necessary)
+            update_beatmap_count()
+
+def delete_all_beatmaps():
+    """
+    Deletes all beatmaps in the listbox, considering key count if specified.
+    """
+    key = key_entry.get()
+    if messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete all beatmaps in the list?"):
+        # Delete items in reverse order to avoid index issues
+        for i in range(result_listbox.size() - 1, -1, -1):
+            folder_name = result_listbox.get(i)
+            folder_path = os.path.join(osu_folder_path, folder_name)
             try:
-                result_listbox.delete(index)
-                shutil.rmtree(folder_path)
-                print(f"Deleted beatmap folder: {folder_name}")
+                # Only delete if key count matches, if a key is specified
+                if key:
+                    # Check if the folder only contains files with the same key count
+                    all_files_match_key = True
+                    for filename in os.listdir(folder_path):
+                        if filename.endswith(".osu"):
+                            file_path = os.path.join(folder_path, filename)
+                            try:
+                                with open(file_path, "r", encoding="utf-8") as f:
+                                    content = f.read()
+                                    if "CircleSize:" in content:
+                                        key_count = int(content.split("CircleSize:")[1].split()[0])
+                                        if key_count != int(key):
+                                            all_files_match_key = False
+                                            break  # No need to check further in this folder
+                            except FileNotFoundError:
+                                print(f"Error: File not found for {filename}")
+                            except PermissionError:
+                                # Add a delay for potential process lock
+                                print(f"Waiting for process to release '{filename}'...")
+                                time.sleep(2)
+                                try:
+                                    os.remove(file_path)
+                                    print(f"Deleted beatmap file: {filename}")
+                                except FileNotFoundError:
+                                    print(f"Error: File not found for {filename}")
+                                except Exception as e:
+                                    print(f"An error occurred while deleting {filename}: {e}")
+                            except Exception as e:
+                                print(f"An error occurred while deleting {filename}: {e}")
+                    if all_files_match_key:
+                        # Delete the entire folder if all files have the same key count
+                        shutil.rmtree(folder_path)
+                        print(f"Deleted beatmap folder: {folder_name}")
+                    else:
+                        # Only delete files with the specified key count
+                        for filename in os.listdir(folder_path):
+                            if filename.endswith(".osu"):
+                                file_path = os.path.join(folder_path, filename)
+                                try:
+                                    with open(file_path, "r", encoding="utf-8") as f:
+                                        content = f.read()
+                                        if "CircleSize:" in content:
+                                            key_count = int(content.split("CircleSize:")[1].split()[0])
+                                            if key_count == int(key):
+                                                os.remove(file_path)
+                                                print(f"Deleted beatmap file: {filename}")
+                                except FileNotFoundError:
+                                    print(f"Error: File not found for {filename}")
+                                except PermissionError:
+                                    # Add a delay for potential process lock
+                                    print(f"Waiting for process to release '{filename}'...")
+                                    time.sleep(2)
+                                    try:
+                                        os.remove(file_path)
+                                        print(f"Deleted beatmap file: {filename}")
+                                    except FileNotFoundError:
+                                        print(f"Error: File not found for {filename}")
+                                    except Exception as e:
+                                        print(f"An error occurred while deleting {filename}: {e}")
+                                except Exception as e:
+                                    print(f"An error occurred while deleting {filename}: {e}")
+                else:  # If no key is specified, delete the whole folder
+                    shutil.rmtree(folder_path)
+                    print(f"Deleted beatmap folder: {folder_name}")
+                result_listbox.delete(i)
                 update_beatmap_count()
             except FileNotFoundError:
                 print(f"Error: Folder not found for {folder_name}")
             except Exception as e:
-                print(f"An error occurred while deleting {folder_name}: {e}") 
+                print(f"An error occurred while deleting {folder_name}: {e}")
+
+def clear_list():
+    """
+    Clears the listbox of results.
+    """
+    result_listbox.delete(0, tk.END)
+    search_count_label.config(text="Found: 0")
+
+def refresh_folder():
+    """
+    Refreshes the beatmap count and updates the listbox based on the current directory.
+    """
+    if osu_folder_path:
+        update_beatmap_count()
+        search_beatmaps(key_entry.get())
 
 # Create the main window
 window = tk.Tk()
@@ -120,9 +237,9 @@ all_beatmaps_var = tk.BooleanVar(value=False)
 all_beatmaps_checkbox = tk.Checkbutton(
     window, text="Search All Beatmaps", variable=all_beatmaps_var
 )
-all_beatmaps_checkbox.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
 
-search_button = tk.Button(window, text="Search Beatmaps", command=search_beatmaps)
+# Search
+search_button = tk.Button(window, text="Search Beatmaps", command=lambda: search_beatmaps(key_entry.get()))
 search_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
 
 # Results Display
@@ -134,7 +251,19 @@ search_count_label = tk.Label(window, text="Found: 0")
 search_count_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
 # Delete Selected
-delete_button = tk.Button(window, text="Delete Selected", command=delete_selected_beatmaps)
-delete_button.grid(row=9, column=0, columnspan=2, padx=5, pady=5)
+delete_button = tk.Button(window, text="Delete Selected", command=lambda: delete_selected_beatmaps(key_entry.get()))
+delete_button.grid(row=9, column=0, padx=5, pady=5)
+
+# Delete All
+delete_all_button = tk.Button(window, text="Delete All", command=delete_all_beatmaps)
+delete_all_button.grid(row=9, column=1, padx=5, pady=5)
+
+# Clear List
+clear_button = tk.Button(window, text="Clear List", command=clear_list)
+clear_button.grid(row=10, column=0, padx=5, pady=5)
+
+# Refresh Folder
+refresh_button = tk.Button(window, text="Refresh Folder", command=refresh_folder)
+refresh_button.grid(row=10, column=1, padx=5, pady=5)
 
 window.mainloop()
