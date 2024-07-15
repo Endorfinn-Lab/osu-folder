@@ -31,7 +31,7 @@ def update_beatmap_count():
                     beatmap_count += 1
     beatmap_count_label.config(text=f"Beatmap Count: {beatmap_count}")
 
-def search_beatmaps(key):
+def search_beatmaps(key, mode):
     """
     Searches for beatmaps based on the entered title, key, and selection.
     """
@@ -51,11 +51,11 @@ def search_beatmaps(key):
                             (search_all or title.lower() in content.lower())
                             and (not key or key in content)
                         ):
-                            # Check for key count (optional)
-                            if key:
-                                if "CircleSize:" in content:
-                                    key_count = int(content.split("CircleSize:")[1].split()[0])
-                                    if key_count == int(key):
+                            # Check for mode (optional)
+                            if mode:
+                                if "Mode:" in content:
+                                    mode_value = int(content.split("Mode:")[1].split()[0])
+                                    if mode_value == int(mode):
                                         found_beatmaps.append(folder_name)
                             else:
                                 found_beatmaps.append(folder_name)
@@ -68,7 +68,7 @@ def display_results(beatmaps):
         result_listbox.insert(tk.END, beatmap)
     search_count_label.config(text=f"Found: {len(beatmaps)}")
 
-def delete_selected_beatmaps(key):
+def delete_selected_beatmaps(key, mode):
     """
     Deletes the selected beatmaps from the osu! directory.
     """
@@ -87,8 +87,15 @@ def delete_selected_beatmaps(key):
                             if "CircleSize:" in content:
                                 key_count = int(content.split("CircleSize:")[1].split()[0])
                                 if key_count == int(key):
-                                    os.remove(file_path)
-                                    print(f"Deleted beatmap file: {filename}")
+                                    if mode:
+                                        if "Mode:" in content:
+                                            mode_value = int(content.split("Mode:")[1].split()[0])
+                                            if mode_value == int(mode):
+                                                os.remove(file_path)
+                                                print(f"Deleted beatmap file: {filename}")
+                                    else:
+                                        os.remove(file_path)
+                                        print(f"Deleted beatmap file: {filename}")
                     except FileNotFoundError:
                         print(f"Error: File not found for {filename}")
                     except PermissionError:
@@ -112,6 +119,7 @@ def delete_all_beatmaps():
     Deletes all beatmaps in the listbox, considering key count if specified.
     """
     key = key_entry.get()
+    mode = mode_entry.get()
     if messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete all beatmaps in the list?"):
         # Get a list of beatmaps before modifying the listbox
         beatmaps_to_delete = [result_listbox.get(i) for i in range(result_listbox.size())]
@@ -163,8 +171,15 @@ def delete_all_beatmaps():
                                         if "CircleSize:" in content:
                                             key_count = int(content.split("CircleSize:")[1].split()[0])
                                             if key_count == int(key):
-                                                os.remove(file_path)
-                                                print(f"Deleted beatmap file: {filename}")
+                                                if mode:
+                                                    if "Mode:" in content:
+                                                        mode_value = int(content.split("Mode:")[1].split()[0])
+                                                        if mode_value == int(mode):
+                                                            os.remove(file_path)
+                                                            print(f"Deleted beatmap file: {filename}")
+                                                else:
+                                                    os.remove(file_path)
+                                                    print(f"Deleted beatmap file: {filename}")
                                 except FileNotFoundError:
                                     print(f"Error: File not found for {filename}")
                                 except PermissionError:
@@ -204,7 +219,7 @@ def refresh_folder():
     """
     if osu_folder_path:
         update_beatmap_count()
-        search_beatmaps(key_entry.get())
+        search_beatmaps(key_entry.get(), mode_entry.get())
 
 # Create the main window
 window = tk.Tk()
@@ -234,13 +249,19 @@ key_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 key_entry = tk.Entry(window, width=40)
 key_entry.grid(row=3, column=1, padx=5, pady=5)
 
+mode_label = tk.Label(window, text="Mode:")
+mode_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
+mode_entry = tk.Entry(window, width=40)
+mode_entry.grid(row=4, column=1, padx=5, pady=5)
+
 all_beatmaps_var = tk.BooleanVar(value=False)
 all_beatmaps_checkbox = tk.Checkbutton(
     window, text="Search All Beatmaps", variable=all_beatmaps_var
 )
 
 # Search
-search_button = tk.Button(window, text="Search Beatmaps", command=lambda: search_beatmaps(key_entry.get()))
+search_button = tk.Button(window, text="Search Beatmaps", command=lambda: search_beatmaps(key_entry.get(), mode_entry.get()))
 search_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
 
 # Results Display
@@ -252,7 +273,7 @@ search_count_label = tk.Label(window, text="Found: 0")
 search_count_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
 # Delete Selected
-delete_button = tk.Button(window, text="Delete Selected", command=lambda: delete_selected_beatmaps(key_entry.get()))
+delete_button = tk.Button(window, text="Delete Selected", command=lambda: delete_selected_beatmaps(key_entry.get(), mode_entry.get()))
 delete_button.grid(row=9, column=0, padx=5, pady=5)
 
 # Delete All
