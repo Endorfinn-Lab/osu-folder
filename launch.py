@@ -223,10 +223,10 @@ def refresh_folder():
 
 # Create the main window
 window = tk.Tk()
-window.title("osu! Beatmap Deleter")
+window.title("osu!Folder")
 
 # osu! Folder Selection
-osu_folder_label = tk.Label(window, text="Select osu! Beatmap Directory:")
+osu_folder_label = tk.Label(window, text="Select osu! Beatmap Directory (osu!/Songs/):")
 osu_folder_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
 osu_folder_button = tk.Button(window, text="Select Directory", command=select_osu_folder)
@@ -237,19 +237,19 @@ beatmap_count_label = tk.Label(window, text="Beatmap Count:")
 beatmap_count_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
 # Search Parameters
-title_label = tk.Label(window, text="Beatmap Title:")
+title_label = tk.Label(window, text="Title:")
 title_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
 title_entry = tk.Entry(window, width=40)
 title_entry.grid(row=2, column=1, padx=5, pady=5)
 
-key_label = tk.Label(window, text="Key Count (CircleSize):")
+key_label = tk.Label(window, text="Key Count:")
 key_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
 key_entry = tk.Entry(window, width=40)
 key_entry.grid(row=3, column=1, padx=5, pady=5)
 
-mode_label = tk.Label(window, text="Mode:")
+mode_label = tk.Label(window, text="Mode (0=Std, 1=Taiko, 2=CTB, 3=Mania):")
 mode_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
 mode_entry = tk.Entry(window, width=40)
@@ -261,7 +261,7 @@ all_beatmaps_checkbox = tk.Checkbutton(
 )
 
 # Search
-search_button = tk.Button(window, text="Search Beatmaps", command=lambda: search_beatmaps(key_entry.get(), mode_entry.get()))
+search_button = tk.Button(window, text="Search Beatmaps (leave blank for any)", command=lambda: search_beatmaps(key_entry.get(), mode_entry.get()))
 search_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
 
 # Results Display
