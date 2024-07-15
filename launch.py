@@ -113,9 +113,9 @@ def delete_all_beatmaps():
     """
     key = key_entry.get()
     if messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete all beatmaps in the list?"):
-        # Delete items in reverse order to avoid index issues
-        for i in range(result_listbox.size() - 1, -1, -1):
-            folder_name = result_listbox.get(i)
+        # Get a list of beatmaps before modifying the listbox
+        beatmaps_to_delete = [result_listbox.get(i) for i in range(result_listbox.size())]
+        for folder_name in beatmaps_to_delete:
             folder_path = os.path.join(osu_folder_path, folder_name)
             try:
                 # Only delete if key count matches, if a key is specified
@@ -183,7 +183,8 @@ def delete_all_beatmaps():
                 else:  # If no key is specified, delete the whole folder
                     shutil.rmtree(folder_path)
                     print(f"Deleted beatmap folder: {folder_name}")
-                result_listbox.delete(i)
+                # Delete from listbox after deleting files
+                result_listbox.delete(0, tk.END)
                 update_beatmap_count()
             except FileNotFoundError:
                 print(f"Error: Folder not found for {folder_name}")
