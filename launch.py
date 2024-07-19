@@ -78,48 +78,105 @@ def display_results(beatmaps):
         result_listbox.insert(tk.END, beatmap)
     search_count_label.config(text=f"Found: {len(beatmaps)}")
 
-def delete_selected_beatmaps(key, mode, delete_video_only=False):
+def delete_selected_beatmaps(key, mode):
     """Deletes the selected beatmaps."""
     selected_indices = result_listbox.curselection()
 
-    if messagebox.askyesno(
-        "Confirm Deletion", "Are you sure you want to delete the selected beatmaps?"
-    ):
+    if messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete the selected beatmaps?"):
         deleted_count = 0
         for index in selected_indices:
             folder_name = result_listbox.get(index)
             folder_path = os.path.join(osu_folder_path, folder_name)
 
-            if delete_video_only:
-                delete_video_files(folder_path)
+            if key:
+                for filename in os.listdir(folder_path): 
+                    if filename.endswith(".osu"):
+                        file_path = os.path.join(folder_path, filename)
+                        try:
+                            with open(file_path, "r", encoding="utf-8") as f:
+                                content = f.read()
+                                key_count = extract_key_count(content)
+                                mode_value = extract_mode(content)
+                                if (key_count == int(key)) and (mode == "All" or mode_value == int(mode)):
+                                    os.remove(file_path)
+                                    deleted_count += 1
+                                    print(f"Deleted beatmap file: {os.path.basename(file_path)}")
+                        except (FileNotFoundError, PermissionError) as e:
+                            print(f"Error deleting {filename}: {e}")
+                            if isinstance(e, PermissionError): 
+                                messagebox.showwarning("Permission Error", f"Could not delete {filename}. Make sure the file is not in use.")
+
+                if not os.listdir(folder_path): 
+                    try:
+                        os.rmdir(folder_path)
+                        print(f"Deleted empty folder: {folder_name}")
+                    except OSError as e:
+                        print(f"Error deleting empty folder {folder_name}: {e}")
+
             else:
-                delete_folder(folder_path, key, mode)
-            deleted_count += 1
+                try:
+                    shutil.rmtree(folder_path)
+                    deleted_count += 1
+                    print(f"Deleted folder: {folder_name}")
+                except (FileNotFoundError, PermissionError) as e:
+                    print(f"Error deleting {folder_name}: {e}")
+                    if isinstance(e, PermissionError): 
+                        messagebox.showwarning("Permission Error", f"Could not delete {folder_name}. Make sure the folder or files inside are not in use.") 
 
             update_beatmap_count()
         if deleted_count > 0:
             messagebox.showinfo("Success", f"Deleted {deleted_count} beatmaps successfully.")
         else:
-            messagebox.showwarning(
-                "No Files Deleted", "No files were deleted. Please check your selection and filters."
-            )
+            messagebox.showwarning("No Files Deleted", "No files were deleted. Please check your selection and filters.")
 
-def delete_all_beatmaps(key, mode, delete_video_only=False):
+def delete_all_beatmaps(key, mode):
     """Deletes all beatmaps matching the specified key and mode."""
-    if messagebox.askyesno(
-        "Confirm Deletion", "Are you sure you want to delete all matching beatmaps?"
-    ):
+    if messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete all matching beatmaps?"):
         deleted_count = 0
+        try:
+            key = int(key) if key else None
+        except ValueError:
+            messagebox.showwarning("Invalid Input", "Circle Size must be a number.")
+            return
 
         for folder_name in os.listdir(osu_folder_path):
             folder_path = os.path.join(osu_folder_path, folder_name)
             if os.path.isdir(folder_path):
-                if delete_video_only:
-                    delete_video_files(folder_path)
-                    deleted_count += 1  
-                else:
-                    if delete_folder(folder_path, key, mode):
+                should_delete_folder = False
+
+                for filename in os.listdir(folder_path):
+                    if filename.endswith(".osu"):
+                        file_path = os.path.join(folder_path, filename)
+                        try:
+                            with open(file_path, "r", encoding="utf-8") as f:
+                                content = f.read()
+                                key_count = extract_key_count(content)
+                                mode_value = extract_mode(content)
+                                if (key is None or key_count == key) and (
+                                    mode == "All" or mode_value == int(mode.split(" ")[0])
+                                ):
+                                    should_delete_folder = True
+                                    break  
+                        except (FileNotFoundError, PermissionError) as e:
+                            print(f"Error reading {filename}: {e}")
+                            if isinstance(e, PermissionError):
+                                messagebox.showwarning(
+                                    "Permission Error",
+                                    f"Could not access {filename}. Make sure the file is not in use.",
+                                )
+
+                if should_delete_folder:
+                    try:
+                        shutil.rmtree(folder_path)
                         deleted_count += 1
+                        print(f"Deleted folder: {folder_name}")
+                    except (FileNotFoundError, PermissionError) as e:
+                        print(f"Error deleting {folder_name}: {e}")
+                        if isinstance(e, PermissionError):
+                            messagebox.showwarning(
+                                "Permission Error",
+                                f"Could not delete {folder_name}. Make sure the folder or files inside are not in use.",
+                            )
 
         update_beatmap_count()
         if deleted_count > 0:
@@ -131,67 +188,78 @@ def delete_all_beatmaps(key, mode, delete_video_only=False):
                 "No Folders Deleted", "No folders were deleted. Please check your search criteria."
             )
 
-def delete_folder(folder_path, key, mode):
-    """Deletes a folder based on key and mode settings."""
-    if key:
-        for filename in os.listdir(folder_path):
-            if filename.endswith(".osu"):
-                file_path = os.path.join(folder_path, filename)
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        key_count = extract_key_count(content)
-                        mode_value = extract_mode(content)
-                        mode_number = int(mode.split(" ")[0])
-                        if (key_count == int(key)) and (
-                            mode == "All" or mode_value == mode_number
-                        ):
-                            os.remove(file_path)
-                            print(f"Deleted beatmap file: {os.path.basename(file_path)}")
-                except (FileNotFoundError, PermissionError) as e:
-                    print(f"Error deleting {filename}: {e}")
-                    if isinstance(e, PermissionError):
-                        messagebox.showwarning(
-                            "Permission Error",
-                            f"Could not delete {filename}. Make sure the file is not in use by another program.",
-                        )
-        if not os.listdir(folder_path):
-            try:
-                os.rmdir(folder_path)
-                print(f"Deleted empty folder: {os.path.basename(folder_path)}")
-                return True
-            except OSError as e:
-                print(f"Error deleting empty folder {os.path.basename(folder_path)}: {e}")
-                return False
-    else:  
-        try:
-            shutil.rmtree(folder_path)
-            print(f"Deleted folder: {os.path.basename(folder_path)}")
-            return True
-        except (FileNotFoundError, PermissionError) as e:
-            print(f"Error deleting {os.path.basename(folder_path)}: {e}")
-            if isinstance(e, PermissionError):
-                messagebox.showwarning(
-                    "Permission Error",
-                    f"Could not delete {os.path.basename(folder_path)}. Make sure the folder or files inside are not in use.",
-                )
-            return False
+def delete_selected_videos():
+    """Deletes video files from selected beatmaps."""
+    selected_indices = result_listbox.curselection()
 
-def delete_video_files(folder_path):
-    """Deletes video files within a folder."""
-    for filename in os.listdir(folder_path):
-        if filename.lower().endswith((".mp4", ".avi", ".flv")):
-            file_path = os.path.join(folder_path, filename)
-            try:
-                os.remove(file_path)
-                print(f"Deleted video file: {filename}")
-            except (FileNotFoundError, PermissionError) as e:
-                print(f"Error deleting {filename}: {e}")
-                if isinstance(e, PermissionError):
-                    messagebox.showwarning(
-                        "Permission Error",
-                        f"Could not delete {filename}. Make sure the file is not in use by another program.",
-                    )
+    if messagebox.askyesno(
+        "Confirm Deletion",
+        "Are you sure you want to delete video files from the selected beatmaps?",
+    ):
+        deleted_count = 0
+        for index in selected_indices:
+            folder_name = result_listbox.get(index)
+            folder_path = os.path.join(osu_folder_path, folder_name)
+            for filename in os.listdir(folder_path):
+                if filename.lower().endswith((".mp4", ".avi", ".flv")):
+                    file_path = os.path.join(folder_path, filename)
+                    try:
+                        os.remove(file_path)
+                        deleted_count += 1
+                        print(f"Deleted video file: {filename}")
+                    except (FileNotFoundError, PermissionError) as e:
+                        print(f"Error deleting {filename}: {e}")
+                        if isinstance(e, PermissionError):
+                            messagebox.showwarning(
+                                "Permission Error",
+                                f"Could not delete {filename}. Make sure the file is not in use.",
+                            )
+
+        if deleted_count > 0:
+            messagebox.showinfo(
+                "Success",
+                f"Deleted {deleted_count} video files successfully.",
+            )
+        else:
+            messagebox.showwarning(
+                "No Video Files Deleted",
+                "No video files were deleted. Please check your selection.",
+            )
+
+def delete_all_videos():
+    """Deletes all video files from all beatmaps."""
+    if messagebox.askyesno(
+        "Confirm Deletion",
+        "Are you sure you want to delete all video files from all beatmaps?",
+    ):
+        deleted_count = 0
+        for folder_name in os.listdir(osu_folder_path):
+            folder_path = os.path.join(osu_folder_path, folder_name)
+            if os.path.isdir(folder_path):
+                for filename in os.listdir(folder_path):
+                    if filename.lower().endswith((".mp4", ".avi", ".flv")):
+                        file_path = os.path.join(folder_path, filename)
+                        try:
+                            os.remove(file_path)
+                            deleted_count += 1
+                            print(f"Deleted video file: {filename}")
+                        except (FileNotFoundError, PermissionError) as e:
+                            print(f"Error deleting {filename}: {e}")
+                            if isinstance(e, PermissionError):
+                                messagebox.showwarning(
+                                    "Permission Error",
+                                    f"Could not delete {filename}. Make sure the file is not in use.",
+                                )
+
+        if deleted_count > 0:
+            messagebox.showinfo(
+                "Success",
+                f"Deleted {deleted_count} video files successfully.",
+            )
+        else:
+            messagebox.showwarning(
+                "No Video Files Deleted", "No video files were found."
+            )
 
 def clear_list():
     """Clears the listbox of search results."""
@@ -204,7 +272,7 @@ def refresh_folder():
         update_beatmap_count()
         search_beatmaps(
             key_entry.get(), mode_var.get(), video_only_var.get()
-        )  
+        )
 
 def extract_key_count(content):
     """Extracts the key count from the .osu file content."""
@@ -228,7 +296,9 @@ window.configure(bg="#f0f0f0")
 
 # GUI elements
 osu_folder_label = tk.Label(
-    window, text="Select osu! Beatmap Directory (osu!/Songs/):", bg="#f0f0f0"
+    window,
+    text="Select osu! Beatmap Directory (osu!/Songs/):",
+    bg="#f0f0f0",
 )
 osu_folder_button = tk.Button(
     window, text="Select Directory", command=select_osu_folder
@@ -270,19 +340,33 @@ refresh_button = tk.Button(
 search_count_label = tk.Label(window, text="Found: 0", bg="#f0f0f0")
 delete_button = tk.Button(
     window,
-    text="Delete Selected",
+    text="Delete Selected Beatmaps",
     command=lambda: delete_selected_beatmaps(
-        key_entry.get(), mode_var.get(), video_only_var.get()
+        key_entry.get(), mode_var.get()
     ),
     bg="#ff9800",
     fg="white",
 )
 delete_all_button = tk.Button(
     window,
-    text="Delete All Matching",
+    text="Delete All Matching Beatmaps",
     command=lambda: delete_all_beatmaps(
-        key_entry.get(), mode_var.get(), video_only_var.get()
+        key_entry.get(), mode_var.get()
     ),
+    bg="#ff9800",
+    fg="white",
+)
+delete_selected_videos_button = tk.Button(
+    window,
+    text="Delete Selected Videos",
+    command=delete_selected_videos,
+    bg="#ff9800",
+    fg="white",
+)
+delete_all_videos_button = tk.Button(
+    window,
+    text="Delete All Videos",
+    command=delete_all_videos,
     bg="#ff9800",
     fg="white",
 )
@@ -306,5 +390,7 @@ refresh_button.grid(row=9, column=1, padx=5, pady=5)
 search_count_label.grid(row=10, column=0, padx=5, pady=5, sticky="w")
 delete_button.grid(row=11, column=0, padx=5, pady=5)
 delete_all_button.grid(row=11, column=1, padx=5, pady=5)
+delete_selected_videos_button.grid(row=12, column=0, padx=5, pady=5)
+delete_all_videos_button.grid(row=12, column=1, padx=5, pady=5)
 
 window.mainloop()
