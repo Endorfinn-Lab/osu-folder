@@ -1,5 +1,4 @@
 # osu!Folder
-WIP
 
 ## Beatmap Deleter
 After deleting all visible beatmaps through the game, sometimes they will appear again. This tool allows you to delete beatmaps clearly. <br> <br>
