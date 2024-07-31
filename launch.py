@@ -92,8 +92,35 @@ def delete_selected_beatmaps(key=None, mode="All"):
             folder_path = os.path.join(osu_folder_path, folder_name)
 
             if key:  
-                deleted_count += delete_beatmaps_in_folder(folder_path, key, mode)
-            else:
+                key_counts = set()  
+                for filename in os.listdir(folder_path):
+                    if filename.endswith(".osu"):
+                        file_path = os.path.join(folder_path, filename)
+                        try:
+                            with open(file_path, "r", encoding="utf-8") as f:
+                                content = f.read()
+                                key_count = extract_key_count(content)  
+                                if key_count is not None:
+                                    key_counts.add(key_count)
+                                    if len(key_counts) > 1:  
+                                        break
+                        except (FileNotFoundError, PermissionError) as e:
+                            print(f"Error deleting {filename}: {e}")
+                            if isinstance(e, PermissionError):
+                                messagebox.showwarning("Permission Error", f"Could not delete {filename}. It might be in use.")
+
+                if len(key_counts) == 1 and int(key) in key_counts:  
+                    try:
+                        shutil.rmtree(folder_path)
+                        deleted_count += 1
+                        print(f"Deleted folder: {os.path.basename(folder_path)}")
+                    except (FileNotFoundError, PermissionError) as e:
+                        print(f"Error deleting {os.path.basename(folder_path)}: {e}")
+                        if isinstance(e, PermissionError):
+                            messagebox.showwarning("Permission Error",
+                                                   f"Could not delete {os.path.basename(folder_path)}. It might be in use.")
+
+            else:  
                 try:
                     shutil.rmtree(folder_path)
                     deleted_count += 1
@@ -127,8 +154,35 @@ def delete_all_beatmaps(key=None, mode="All"):
         for folder_name in os.listdir(osu_folder_path):
             folder_path = os.path.join(osu_folder_path, folder_name)
             if os.path.isdir(folder_path):
-                if key:
-                    deleted_count += delete_beatmaps_in_folder(folder_path, key, mode)
+                if key:  
+                    key_counts = set()  
+                    for filename in os.listdir(folder_path):
+                        if filename.endswith(".osu"):
+                            file_path = os.path.join(folder_path, filename)
+                            try:
+                                with open(file_path, "r", encoding="utf-8") as f:
+                                    content = f.read()
+                                    key_count = extract_key_count(content)  
+                                    if key_count is not None:
+                                        key_counts.add(key_count)
+                                        if len(key_counts) > 1:  
+                                            break
+                            except (FileNotFoundError, PermissionError) as e:
+                                print(f"Error deleting {filename}: {e}")
+                                if isinstance(e, PermissionError):
+                                    messagebox.showwarning("Permission Error", f"Could not delete {filename}. It might be in use.")
+
+                    if len(key_counts) == 1 and int(key) in key_counts:  
+                        try:
+                            shutil.rmtree(folder_path)
+                            deleted_count += 1
+                            print(f"Deleted folder: {os.path.basename(folder_path)}")
+                        except (FileNotFoundError, PermissionError) as e:
+                            print(f"Error deleting {os.path.basename(folder_path)}: {e}")
+                            if isinstance(e, PermissionError):
+                                messagebox.showwarning("Permission Error",
+                                                       f"Could not delete {os.path.basename(folder_path)}. It might be in use.")
+
                 else:
                     try:
                         shutil.rmtree(folder_path)
@@ -146,7 +200,7 @@ def delete_all_beatmaps(key=None, mode="All"):
             messagebox.showinfo("Success", f"Deleted {deleted_count} beatmaps successfully.")
         else:
             messagebox.showwarning("No Folders Deleted", "No folders were deleted. Check your search criteria.")
-
+            
 def delete_beatmaps_in_folder(folder_path, key=None, mode="All"):
     """Deletes beatmaps within a folder based on key and mode."""
     deleted_in_folder = 0
