@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Osu Friend Request Notifier
-// @namespace    http://tampermonkey.net/
+// @namespace    https://osu.ppy.sh/users/14588134
 // @version      0.1
 // @description  Notifies you when someone adds you as a friend on osu!
 // @author       Endorfinn
