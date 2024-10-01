@@ -7,4 +7,4 @@ Features:
 - Delete video only (.mp4, .avi, .flv)
 
 ## Osu Friend Notifier
-https://github.com/Endorfinn-Lab/osu-folder/raw/master/osu-friend-notifier.js
+https://github.com/Endorfinn-Lab/osu-folder/raw/main/osu-friend-notifier.js
