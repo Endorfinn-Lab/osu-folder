@@ -5,3 +5,6 @@ After deleting all visible beatmaps through the game, sometimes they will appear
 Features: 
 - Delete entire beatmap/folder based on keycount or gamemode
 - Delete video only (.mp4, .avi, .flv)
+
+## Osu Friend Notifier
+https://github.com/Endorfinn-Lab/osu-folder/raw/master/osu-friend-notifier.js
