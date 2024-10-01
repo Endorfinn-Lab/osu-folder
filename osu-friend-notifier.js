@@ -3,9 +3,22 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  Notifies you when someone adds you as a friend on osu!
-// @author       [Your Name]
+// @author       Endorfinn
+// @match        http://osu.ppy.sh/*
 // @match        https://osu.ppy.sh/*
-// @grant        none
+// @match        http://old.ppy.sh/*
+// @match        https://old.ppy.sh/*
+
+// @noframes
+// @connect      ppy.sh
+// @grant        GM.xmlHttpRequest
+// @grant        GM.setValue
+// @grant        GM.getValue
+// @grant        GM_xmlhttpRequest
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @require      https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js
+// @require      http://timeago.yarp.com/jquery.timeago.js
 // ==/UserScript==
 
 (function() {
